@@ -131,7 +131,7 @@ OctoPan/
     ├── GRCh38_edit_chr_names.fa
     ├── CHM13_edit_chr_names.fa
     ├── Homo_sapiens_assembly38.fasta
-    ├── neuromuscular_neurodegenerative_disease_superpanel.bed
+    ├── disease_superpanel_example.bed
     └── gnomad.exomes.v4.0.sites.chr1-22,X,Y.vcf.gz
 ```
 you've to make sure that you downloaded all datasets and containers and placed them correctly 
@@ -221,7 +221,7 @@ Open `Main_inputs.json` and update the paths to match your environment. The fiel
   "Main.refAssembly": "./datasets/Homo_sapiens_assembly38.fasta",
 
   // --- Annotation and disease panel ---
-  "Main.disease_gene_panel": "./datasets/neuromuscular_neurodegenerative_disease_superpanel.bed",
+  "Main.disease_gene_panel": "./datasets/disease_superpanel_example.bed",
   "Main.gnomAD":             "./datasets/gnomad.exomes.v4.0.sites.chr1-22,X,Y.vcf.gz",
 
   // --- Containers and helper scripts (relative paths from repo root) ---
