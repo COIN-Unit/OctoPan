@@ -65,10 +65,18 @@ https://gnomad.broadinstitute.org/data#v4-variants
 ```
 Then, use `bcftools concat` to combine all of them into one VCF file and save it with this name `gnomad.exomes.v4.0.sites.chr1-22,X,Y.vcf.gz`. Finaly, place the VCF inside the `datasets` directory.
 
+#### snvstory_resources
+download it from Zenodo, unzip and place it inside the `containers` directory
+
+```
+https://zenodo.org/records/20378382/files/snvstory_resource.tar.gz?download=1
+```
+
 #### Other datasets
 Other required datasets are stored on Zenodo. Just download them, unzip, and store them inside the `datasets` directory.
 
 ```
+wget https://zenodo.org/records/20378382/files/datasets.tar.gz?download=1
 ```
 
 ### Singularity
@@ -77,6 +85,7 @@ All other tools (DeepVariant, STRipy, MitoHPC, SQUIRLS, SNVstory, OctoPan toolki
 download them from this link 
 
 ```
+https://zenodo.org/records/20378382/files/singularities.tar.gz?download=1
 ```
 Unpack them and store them inside the `containers/` directory. No further installation is needed for these tools.
 
