@@ -1,6 +1,6 @@
 {
   "Main.mode": "WES",           // Analysis mode: "WES" or "WGS"
-  "Main.wd": "/path/to/your/project/",
+  "Main.wd": "/path/to/your/project/fastq",
   "Main.samplesList": "/path/to/your/project/fastq/raw_reads/samplesList.txt",
   "Main.samplesInfo": "/path/to/your/project/fastq/raw_reads/sampleInfo.txt",
 
@@ -17,7 +17,7 @@
   "Main.refAssembly": "./datasets/Homo_sapiens_assembly38.fasta",
 
   // --- Annotation and disease panel ---
-  "Main.disease_gene_panel": "./datasets/neuromuscular_neurodegenerative_disease_superpanel.bed",
+  "Main.disease_gene_panel": "./datasets/disease_superpanel_example.bed",
   "Main.gnomAD":             "./datasets/gnomad.exomes.v4.0.sites.chr1-22,X,Y.vcf.gz",
 
   // --- Containers and helper scripts (relative paths from repo root) ---
@@ -31,4 +31,9 @@
   "Main.SnpEff":                  "./containers/snpEff",
   "Main.genderCheck":             "./containers/determine_sex_from_bam.py",
   "Main.json_to_csv_graph":       "./containers/json_to_csv_graph.R"
+
+ // --- Resources ---
+  "Main.cpu":    32,     // Number of CPU cores allocated to each task
+  "Main.mem_mb": 7100,   // Memory per core in MB (total RAM = cpu × mem_mb)
+  "Main.time":   1200    // Maximum walltime per task in minutes
 }
