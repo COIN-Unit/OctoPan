@@ -56,6 +56,18 @@ The sex-determination script (`determine_sex_from_bam.py`) requires:
 pip install pandas
 ```
 
+### SNPEff
+```
+wget https://snpeff-public.s3.amazonaws.com/versions/snpEff_latest_core.zip
+```
+Unpack and store it inside the `containers/` directory.
+
+### Squirls
+```
+wget https://github.com/monarch-initiative/Squirls/releases/download/v2.0.1/squirls-cli-2.0.1-distribution.zip
+```
+Unpack and store it inside the `containers/` directory.
+
 ### Reqiered Datasets
 
 #### genomAD
