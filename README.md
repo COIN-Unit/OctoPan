@@ -3,8 +3,7 @@
 **OctoPan** is a comprehensive, scalable WDL (Workflow Description Language) pipeline for whole-exome sequencing (WES) and whole-genome sequencing (WGS) analysis. It leverages a **personalised human pangenome reference graph** (HPRC v1.1) to maximise read mapping sensitivity, then surjects alignments back to linear references (GRCh38 and CHM13) for downstream variant calling, structural variant detection, STR genotyping, mitochondrial analysis, and splicing-variant prioritisation — all in a single, automated run.
 
 ---
-<img width="1435" height="800" alt="image" src="https://github.com/user-attachments/assets/c0cd8012-79c0-4b8c-b69a-873c2e0b3331" />
-
+<img width="1580" height="887" alt="image" src="https://github.com/user-attachments/assets/1eec3743-29e3-4304-93bd-88b65a13749a" />
 ---
 ## Why OctoPan?
 
@@ -56,13 +55,34 @@ The sex-determination script (`determine_sex_from_bam.py`) requires:
 pip install pandas
 ```
 
+### Reqiered Datasets
+
+#### genomAD
+you need to get `gnomad.exomes.v4.0.sites.chr1-22,X,Y.vcf.gz`. Firstly, download all exomes sites in VCF formats, from chr1 to chr22, X, and Y from genomAD portal here
+```
+https://gnomad.broadinstitute.org/data#v4-variants
+```
+Then, use `bcftools concat` to combine all of them into one VCF file and save it with this name `gnomad.exomes.v4.0.sites.chr1-22,X,Y.vcf.gz`. Finaly, place the VCF inside the `datasets` directory.
+
+#### Other datasets
+Other required datasets are stored on Zenodo. Just download them, unzip, and store them inside the `datasets` directory.
+
+```
+```
+
 ### Singularity
 
-All other tools (DeepVariant, STRipy, MitoHPC, SQUIRLS, SNVstory, OctoPan toolkit) are distributed as Singularity images located in the `containers/` directory. No further installation is needed for these tools.
+All other tools (DeepVariant, STRipy, MitoHPC, SQUIRLS, SNVstory, OctoPan toolkit) are distributed as Singularity images stored on Zenodo.
+download them from this link 
+
+```
+```
+Unpack them and store them inside the `containers/` directory. No further installation is needed for these tools.
 
 ---
 
 ## 2. Repository Structure
+The directories structure after downloading all the dependencies should follow this:
 
 ```
 OctoPan/
@@ -114,6 +134,7 @@ OctoPan/
     ├── neuromuscular_neurodegenerative_disease_superpanel.bed
     └── gnomad.exomes.v4.0.sites.chr1-22,X,Y.vcf.gz
 ```
+you've to make sure that you downloaded all datasets and containers and placed them correctly 
 
 ---
 
