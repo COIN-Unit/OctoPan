@@ -27,6 +27,7 @@ Traditional pipelines align reads to a single linear reference (GRCh38), which i
 6. [Workflow Steps](#6-workflow-steps)
 7. [Outputs](#7-outputs)
 8. [Troubleshooting](#8-troubleshooting)
+9. [Resource Requirements and Tuning](#9-resource-requirements-and-tuning)
 
 ---
 
@@ -257,6 +258,11 @@ Open `Main_inputs.json` and update the paths to match your environment. The fiel
   "Main.SnpEff":                  "./containers/snpEff",
   "Main.genderCheck":             "./containers/determine_sex_from_bam.py",
   "Main.json_to_csv_graph":       "./containers/json_to_csv_graph.R"
+
+ // --- Resources ---
+  "Main.cpu":    32,     // Number of CPU cores allocated to each task
+  "Main.mem_mb": 7100,   // Memory per core in MB (total RAM = cpu × mem_mb)
+  "Main.time":   1200    // Maximum walltime per task in minutes
 }
 ```
 
@@ -391,6 +397,152 @@ Install `pandas` in the Python environment available to the sex-determination sc
 
 **Singularity bind errors**
 Ensure the project directory and `datasets/` paths are accessible to Singularity. You may need to add bind mounts to `WDL_v3.1_fixed.conf` depending on your HPC environment.
+
+
+
+## 9. Resource Requirements and Tuning
+ 
+OctoPan exposes three global resource parameters — `cpu`, `mem_mb`, and `time` — that are passed uniformly to every task in the workflow via the JSON input file. However, different tasks have very different computational demands. This section explains what each task actually needs, how to set global defaults appropriately, and when you may need to raise or lower them.
+ 
+---
+ 
+### 9.1 How Resources Are Controlled
+ 
+The three parameters in `Main_inputs.json` are:
+ 
+```json
+"Main.cpu":    32,     // Number of CPU cores allocated to each task
+"Main.mem_mb": 7100,   // Memory per core in MB (total RAM = cpu × mem_mb)
+"Main.time":   1200    // Maximum walltime per task in minutes
+```
+ 
+> **Important:** `mem_mb` in OctoPan represents **memory per core**, not total memory. A task running with `cpu = 32` and `mem_mb = 7100` will request `32 × 7100 = 227,200 MB (~222 GB)` of RAM from the scheduler. Verify this matches your cluster's node memory limits before running.
+ 
+These values are forwarded to Cromwell, which passes them to your HPC scheduler (e.g. SLURM) as job resource requests. If a task exceeds its allocation it will be killed by the scheduler — resulting in a failed Cromwell task.
+ 
+---
+ 
+### 9.2 Per-Task Resource Guide
+ 
+The table below gives recommended settings for each workflow task for both WES (~100×) and WGS (~30×) data on a typical 150 bp paired-end Illumina library. All memory figures are **total RAM** (i.e. `cpu × mem_mb`). Adjust proportionally for higher/lower coverage or read lengths.
+ 
+| Task | WDL module | CPU | Total RAM | Walltime (WES) | Walltime (WGS) | Notes |
+|------|-----------|-----|-----------|----------------|----------------|-------|
+| Quality Control | `QualityControl.wdl` | 8 | 16 GB | ~30 min | ~60 min | FastQC is per-read-file, MultiQC is lightweight. I/O bound. |
+| Pangenome Mapping | `MapToPangenome.wdl` | 32 | 200–220 GB | ~3–5 h | ~8–14 h | Most memory-intensive step. `vg giraffe` loads the full GBZ graph (~60–80 GB) plus working buffers. Do not reduce CPU below 16. |
+| BAM Surjection | `SurjectBAM.wdl` | 32 | 100–120 GB | ~2–3 h | ~5–8 h | `vg surject` is both CPU- and memory-intensive. Runs twice (hg38 + CHM13). |
+| Sex Determination | `SexDetermination.wdl` | 4 | 8 GB | ~10 min | ~15 min | Lightweight samtools depth + Python script. |
+| SNV/Indel Calling | `VariantCalling.wdl` | 32 | 120–160 GB | ~3–5 h | ~10–18 h | DeepVariant uses GPU if available; on CPU-only nodes it is the longest variant-calling step. Runs on both references. |
+| Structural Variant Calling | `Manta.wdl` | 16 | 32–48 GB | ~1–2 h | ~3–6 h | Manta is highly parallel but less memory-hungry than DeepVariant. Runs on both references. |
+| STR Expansion Analysis | `STRipyPipeline.wdl` | 8 | 16–24 GB | ~20–40 min | ~30–60 min | STRipy analyses a fixed set of disease loci; runtime scales little with coverage. |
+| Splicing Prioritisation | `SQUIRLS.wdl` | 8 | 24–32 GB | ~30–60 min | ~60–90 min | Loads the SQUIRLS database into memory; RAM requirements are dominated by the DB size, not sample size. |
+| Mutational Signatures | `SNVstory.wdl` | 8 | 16 GB | ~20–30 min | ~30–60 min | Lightweight R/Python analysis on the VCF. |
+| Mitochondrial Extraction | `ExtractChrM.wdl` | 4 | 8 GB | ~5–10 min | ~5–10 min | Samtools view on a single chromosome. Very fast. |
+| Mitochondrial Analysis | `MitoHPC.wdl` | 8 | 24–32 GB | ~30–60 min | ~30–60 min | Runtime is independent of nuclear genome coverage. |
+| Tool Versions | `Versions.wdl` | 2 | 4 GB | ~5 min | ~5 min | Shell commands only. Negligible. |
+ 
+---
+ 
+### 9.3 Recommended Global Settings by Mode
+ 
+Because `cpu`, `mem_mb`, and `time` are shared across all tasks, you must size them to the most demanding task (pangenome mapping) or accept that lighter tasks will over-request resources. The following starting points work well on most HPC nodes with ≥256 GB RAM:
+ 
+**WES (recommended starting point)**
+ 
+```json
+"Main.cpu":    32,
+"Main.mem_mb": 6500,
+"Main.time":   480
+```
+ 
+Total RAM per job: `32 × 6500 = 208 GB`
+Maximum walltime: 8 hours — sufficient for all WES tasks including mapping.
+ 
+**WGS (recommended starting point)**
+ 
+```json
+"Main.cpu":    32,
+"Main.mem_mb": 7100,
+"Main.time":   1200
+```
+ 
+Total RAM per job: `32 × 7100 ≈ 222 GB`
+Maximum walltime: 20 hours — covers the slowest WGS task (DeepVariant on both references).
+ 
+> **Tip:** If your HPC nodes have less than 256 GB RAM, reduce `cpu` to 24 and set `mem_mb` accordingly so that `cpu × mem_mb` stays within your node's physical memory. For example: `cpu = 24`, `mem_mb = 8500` → ~200 GB total.
+ 
+---
+ 
+### 9.4 Memory and CPU Scaling Rules of Thumb
+ 
+**Pangenome mapping (`vg giraffe`)** is the hardest constraint. The GBZ pangenome graph for HPRC v1.1 requires approximately 60–80 GB just to load into memory before any reads are processed. On top of that, `vg giraffe` maintains per-thread working buffers. As a rule:
+ 
+```
+minimum total RAM = graph size (~75 GB) + (cpu_threads × ~1.5 GB) + OS overhead (~10 GB)
+```
+ 
+For 32 threads: 75 + 48 + 10 = ~133 GB minimum. Allow 50–100% headroom → aim for 200+ GB.
+ 
+**DeepVariant** requires significant RAM for model loading and per-shard processing. WGS runs are substantially longer than WES because DeepVariant processes the entire genome rather than the exome target regions. If your cluster has GPU nodes, DeepVariant can be accelerated significantly — check your Singularity/Cromwell configuration to enable GPU passthrough.
+ 
+**Manta, STRipy, SQUIRLS, MitoHPC, SNVstory** are all substantially lighter than the mapping and calling steps. They will complete well within their allocated resources when global settings are sized for mapping/calling.
+ 
+---
+ 
+### 9.5 Estimating Total Pipeline Runtime
+ 
+The pipeline runs tasks sequentially where there are data dependencies (mapping → surjection → calling) and in parallel where it can (e.g. hg38 and CHM13 calling can overlap). Approximate end-to-end wall-clock times for a single sample (assuming all tasks run immediately on a dedicated node):
+ 
+| Mode | Optimistic | Typical | With queue wait |
+|------|-----------|---------|-----------------|
+| WES (100×) | ~6 h | ~10 h | ~12–24 h |
+| WGS (30×) | ~14 h | ~24 h | ~36–72 h |
+ 
+Queue wait time on shared HPC systems is environment-dependent and can dominate total turnaround time.
+ 
+---
+ 
+### 9.6 Setting Per-Task Resources (Advanced)
+ 
+The current implementation uses global `cpu`, `mem_mb`, and `time` values passed uniformly to all tasks. If your Cromwell backend configuration supports per-task overrides (via the `runtime` block in individual WDL files), you can edit the relevant `.wdl` file under `wdls/` to hard-code or parameterise resources independently for each task. For example, in `MapToPangenome.wdl`:
+ 
+```wdl
+runtime {
+    cpu:     cpu          # keep the global value for mapping
+    memory:  mem_mb + " MB"
+    time:    time
+}
+```
+ 
+And in `QualityControl.wdl` you could reduce to dedicated smaller values:
+ 
+```wdl
+runtime {
+    cpu:     8
+    memory:  "16000 MB"
+    time:    60
+}
+```
+ 
+This avoids over-requesting resources for lightweight tasks on schedulers that bill by allocated (not used) resources, which can improve job priority and reduce cost on cloud HPC systems.
+ 
+---
+ 
+### 9.7 Monitoring Resource Usage
+ 
+After a run completes (or fails), you can inspect actual resource consumption from the Cromwell execution logs:
+ 
+```bash
+# Check SLURM accounting for completed jobs
+sacct -j <jobid> --format=JobID,JobName,MaxRSS,MaxVMSize,Elapsed,State
+ 
+# Check peak memory from Cromwell task stderr
+grep -i "memory\|oom\|killed" cromwell-executions/Main/<run-id>/call-MapToPangenomeWorkflow/execution/stderr
+```
+ 
+Use these figures to right-size `mem_mb` and `time` for future runs — particularly if jobs are being killed (OOM) or if you are wasting significant allocated-but-unused RAM.
+ 
+---
 
 ---
 
