@@ -19,7 +19,7 @@ workflow STRipyPipelineWorkflow {
         input:
             json_to_csv_graph = json_to_csv_graph,
             samplesInfo = samplesInfo,
-            sampleSex = sampleSex
+            sampleSex = sampleSex,
             sample_id = sub(basename(bam_hg38), ".hprc-v1.1-mc-chm13_surject_hg38.bam$", ""),
             bam_hg38 = bam_hg38,
             bam_hg38_idx = bam_hg38_idx,
@@ -45,6 +45,7 @@ task STRipyPipeline {
         File bam_hg38
         File bam_hg38_idx
         File refAssembly
+        File sampleSex
         String sample_id
         File stripy_container
         Int cpu
