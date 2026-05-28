@@ -1,4 +1,4 @@
-# OctoPan — Pangenome-Based WES/WGS Analysis Pipeline
+# OctoPan — Pangenome Reference Graph-Based WES/WGS Analysis Pipeline
 
 **OctoPan** is a comprehensive, scalable WDL (Workflow Description Language) pipeline for whole-exome sequencing (WES) and whole-genome sequencing (WGS) analysis. It leverages a **personalised human pangenome reference graph** (HPRC v1.1) to maximise read mapping sensitivity, then surjects alignments back to linear references (GRCh38 and CHM13) for downstream variant calling, structural variant detection, STR genotyping, mitochondrial analysis, and splicing-variant prioritisation — all in a single, automated run.
 
